@@ -11,53 +11,79 @@ jQuery(document).ready(function($) {
                         pageList += `<option value="${page.id}|${page.access_token}">${page.name}</option>`;
                     });
                     pageList += '</select>';
-                    $('#page-list').html(pageList + '<button id="save-page" class="button">Save Page</button>');
+                    $('#page-list').html(pageList + '<button id="toggle-save-delete" class="button button-primary">Save Page</button>');
 
-                    $('#save-page').on('click', function() {
+                    let isPageSaved = false;
+
+                    $('#toggle-save-delete').on('click', function() {
                         const selected = $('#page-select').val().split('|');
-                        console.log('Saving page with data:', selected);
-                        $.post(shahir_ajax.ajax_url, {
-                            action: 'shahir_save_page',
-                            page_id: selected[0],
-                            access_token: selected[1],
-                            security: shahir_ajax.nonce // Add nonce for security
-                        }, function(response) {
-                            console.log(response);
-                            if (response.success) {
-                                alert(response.data);
-                                location.reload(); // Reload to display saved data
-                            } else {
-                                alert('Error: ' + response.data);
-                            }
-                        }).fail(function(xhr, status, error) {
-                            console.log(xhr.responseText);
-                            alert('Error: ' + error);
-                        });
-                    });
-
-                    // Add the remove page button handler here
-                    $('#remove-page').on('click', function() {
-                        if (confirm('Are you sure you want to remove the saved page?')) {
-                            console.log('Remove page button clicked');
+                        if (!isPageSaved) {
+                            console.log('Saving page with data:', selected);
                             $.post(shahir_ajax.ajax_url, {
-                                action: 'shahir_remove_page',
+                                action: 'shahir_save_page',
+                                page_id: selected[0],
+                                access_token: selected[1],
                                 security: shahir_ajax.nonce // Add nonce for security
                             }, function(response) {
                                 console.log(response);
                                 if (response.success) {
                                     alert(response.data);
-                                    location.reload(); // Reload to update the settings page
+                                    $('#toggle-save-delete').text('Delete Page');
+                                    $('#toggle-save-delete').addClass('button-danger').removeClass('button-primary');
+                                    isPageSaved = true;
                                 } else {
                                     alert('Error: ' + response.data);
                                 }
                             }).fail(function(xhr, status, error) {
+                                console.log(xhr.responseText);
                                 alert('Error: ' + error);
                             });
+                        } else {
+                            if (confirm('Are you sure you want to remove the saved page?')) {
+                                console.log('Removing page');
+                                $.post(shahir_ajax.ajax_url, {
+                                    action: 'shahir_remove_page',
+                                    security: shahir_ajax.nonce // Add nonce for security
+                                }, function(response) {
+                                    console.log(response);
+                                    if (response.success) {
+                                        alert(response.data);
+                                        $('#toggle-save-delete').text('Save Page');
+                                        $('#toggle-save-delete').addClass('button-primary').removeClass('button-danger');
+                                        isPageSaved = false;
+                                        location.reload(); // Reload to update the settings page
+                                    } else {
+                                        alert('Error: ' + response.data);
+                                    }
+                                }).fail(function(xhr, status, error) {
+                                    alert('Error: ' + error);
+                                });
+                            }
                         }
                     });
                 });
             }
         }, {scope: 'pages_manage_posts,pages_read_engagement,pages_show_list'});
     });
-});
 
+    const removePageButton = document.getElementById('remove-page');
+    if (removePageButton) {
+        removePageButton.addEventListener('click', function() {
+            if (confirm('Are you sure you want to remove the saved page?')) {
+                $.post(shahir_ajax.ajax_url, {
+                    action: 'shahir_remove_page',
+                    security: shahir_ajax.nonce // Add nonce for security
+                }, function(response) {
+                    if (response.success) {
+                        alert(response.data);
+                        location.reload(); // Reload to update the settings page
+                    } else {
+                        alert('Error: ' + response.data);
+                    }
+                }).fail(function(xhr, status, error) {
+                    alert('Error: ' + error);
+                });
+            }
+        });
+    }
+});
